@@ -198,7 +198,8 @@ function CopyToPackage() {
 		$sourceDir = Join-Path -Resolve $spec.basedirectory $spec.from
 		$spec.include | %{ 
 			Write-Verbose "Processing $sourceDir\$_"
-			dir -recurse $sourceDir\$_ | ?{ 
+			$specErrors = @()
+			dir -ErrorAction SilentlyContinue -ErrorVariable +specErrors -recurse $sourceDir\$_ | ?{ 
 				$source = $_.FullName
 				$relativePath = $source.Substring( $sourceDir.Length ).Trim( '\' )
 				$exclusions = $spec.exclude | ?{ 
@@ -210,12 +211,16 @@ function CopyToPackage() {
 					Write-Verbose "Skipping $relativePath ($exclusions)"
 				} else { 
 					try {
-						copy -Recurse -Path $source -Destination $targetDir -WhatIf:$WhatIfPreference -Verbose:$($VerbosePreference -eq "Continue")
+						copy -ErrorAction SilentlyContinue -ErrorVariable +specErrors -Recurse -Path $source -Destination $targetDir -WhatIf:$WhatIfPreference -Verbose:$($VerbosePreference -eq "Continue")
 					} catch {
 						Write-Error "Error processing spec: `r`n$($spec | fl)"
 						throw $_
 					}
 				}
+			}
+			
+			if( $specErrors.Count -gt 0 ) {
+				Write-Warning "Errors at $($spec.specfile):$($spec.linenumber): `r`n$specErrors"
 			}
 		}
 	}
