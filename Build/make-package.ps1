@@ -5,10 +5,11 @@
 	The result is a package directory with only those files that were specified by the instructions.
 	The package.spec file can contain series of the following commands:
 	
-	from    - a source directory relative to the package.spec file location
-	to      - a target directory relative to the root of the package directory
-	include - a comma-separated list of file patterns to include when copying files
-	exclude - a comma-separated list of file patterns to exclude when copying files
+	from      - a source directory relative to the package.spec file location
+	to        - a target directory relative to the root of the package directory
+	norecurse - turns off recursive traversal of the source directory
+	include   - a comma-separated list of file patterns to include when copying files
+	exclude   - a comma-separated list of file patterns to exclude when copying files
 	
 	Both include and exclude must be either relative to the source directory or contain
 	a file name pattern without a relative directory.
@@ -152,7 +153,7 @@ function HashSpec( $specFile, $lineNumber = 1 ) {
 	@{ "basedirectory" = $specFile.Directory; "specfile" = $specFile.FullName; "linenumber" = $lineNumber }
 }
 
-function IsValidSpecHash( $specHash ) {
+function IsValidSpecHash( $spec ) {
 	$spec["from"] -ne $null -and $spec["to"] -ne $null
 }
 
@@ -164,13 +165,18 @@ filter AsPackageSpec {
 	$lineNumber = 0
 	gc $specFile.FullName | %{
 		$lineNumber++
-		if( $_ -match "^([^\s]+)\s+(.+)$" ) {
+		if( $_ -match "^([^\s]+)(\s+(.+))?$" ) {
 			if( $matches[1] -eq "from" -and (IsValidSpecHash $spec ) ) {
 				# yield spec, jump on to the next
 				HashToSpecObject $spec
 				$spec = HashSpec $specFile $lineNumber
 			}
-			$spec[$matches[1]] = $matches[2]
+			if( $matches[3] -eq $null ) {
+				$val = $true
+			} else {
+				$val = $matches[3]
+			}
+			$spec[$matches[1]] = $val
 			$lastKey = $matches[1]
 		}
 		if( $_ -match "^\s+(.+)$" ) {
@@ -182,6 +188,14 @@ filter AsPackageSpec {
 	}
 }
 
+function CreateDirectoryIfNotExists( $directory ) {
+	if( !(Test-Path -PathType Container $directory) ) {
+		if( $pscmdlet.ShouldProcess( $directory, "Create directory" ) ) {
+			mkdir $directory | Out-Null
+		}
+	}
+}
+
 function CopyToPackage() {
 	process {
 		$spec = $_
@@ -190,31 +204,38 @@ function CopyToPackage() {
 			Write-Verbose "$($_.Name): $(iex '$spec.$($_.Name)')"
 		}
 		$targetDir = join-path $packageDir $spec.to
-		if( !(Test-Path $targetDir) ) {
-			if( $pscmdlet.ShouldProcess( $targetDir, "Create directory" ) ) {
-				mkdir $targetDir | Out-Null
-			}
-		}
+		CreateDirectoryIfNotExists $targetDir
 		$sourceDir = Join-Path -Resolve $spec.basedirectory $spec.from
+		$recursive = $spec.norecurse -ne $true
 		$spec.include | %{ 
 			Write-Verbose "Processing $sourceDir\$_"
 			$specErrors = @()
-			dir -ErrorAction SilentlyContinue -ErrorVariable +specErrors -recurse $sourceDir\$_ | ?{ 
-				$source = $_.FullName
-				$relativePath = $source.Substring( $sourceDir.Length ).Trim( '\' )
-				$exclusions = $spec.exclude | ?{ 
-					#Write-Verbose "$relativePath -like $_ = $($relativePath -like $_)"; 
-					$relativePath -like $_ 
-				}
+			$items = @()
+			if( $recursive ) {
+				$items = dir -ErrorAction SilentlyContinue -ErrorVariable +specErrors $sourceDir -include $_ -recurse
+			} else {
+				$items = dir -ErrorAction SilentlyContinue -ErrorVariable +specErrors $sourceDir\$_
+			}
+			if( $items -ne $null ) {
+				$items | ?{ 
+					$source = $_.FullName
+					$relativePath = $source.Substring( $sourceDir.Length ).Trim( '\' )
+					$exclusions = $spec.exclude | ?{ 
+						#Write-Verbose "$relativePath -like $_ = $($relativePath -like $_)"; 
+						$relativePath -like $_ 
+					}
 
-				if( ($exclusions | measure).Count -ne 0 ) {
-					Write-Verbose "Skipping $relativePath ($exclusions)"
-				} else { 
-					try {
-						copy -ErrorAction SilentlyContinue -ErrorVariable +specErrors -Recurse -Path $source -Destination $targetDir -WhatIf:$WhatIfPreference -Verbose:$($VerbosePreference -eq "Continue")
-					} catch {
-						Write-Error "Error processing spec: `r`n$($spec | fl)"
-						throw $_
+					if( ($exclusions | measure).Count -ne 0 ) {
+						Write-Verbose "Skipping $relativePath ($exclusions)"
+					} else { 
+						$destination = [System.IO.Path]::Combine( $targetDir, [System.IO.Path]::GetDirectoryName( $relativePath ))
+						try {
+							CreateDirectoryIfNotExists $destination
+							copy -ErrorAction SilentlyContinue -ErrorVariable +specErrors -Recurse -Force -Path $source -Destination $destination -WhatIf:$WhatIfPreference -Verbose:$($VerbosePreference -eq "Continue")
+						} catch {
+							Write-Error "Error processing spec: `r`n$($spec | fl)"
+							throw $_
+						}
 					}
 				}
 			}
@@ -226,9 +247,34 @@ function CopyToPackage() {
 	}
 }
 
-if( $specFiles -eq $null ) {
-	Write-Host "Looking for package files in $specRootDirectory ..."
-	$specFiles = dir -Recurse $specRootDirectory -Include package.spec
+function CallPackageScripts() {
+	process {
+		$spec = $_
+		$packageScript = $spec.specfile -replace "\.spec$",".ps1"
+		if( Test-Path $packageScript ) {
+			$supportsWhatIf = $WhatIfPreference -and (Get-Command $packageScript | select -ExpandProperty ParameterSets | select -ExpandProperty Parameters | ?{ $_.Name -eq "WhatIf" } | measure | select -ExpandProperty Count) -gt 0
+			Write-Verbose "=== Calling package script $packageScript ==="
+			$packageScript | Split-Path | pushd
+			try {
+				if( $supportsWhatIf ) {
+					& $packageScript -WhatIf
+				} elseif( !$WhatIfPreference ) {
+					& $packageScript | %{ Write-Verbose "> $_" }
+				}
+			} finally {
+				popd
+			}
+			Write-Verbose "=== Done: $packageScript ==="
+		}
+	}
 }
 
-$specFiles | AsPackageSpec | CopyToPackage
+if( $specFiles -eq $null ) {
+	Write-Host "Looking for package files in $specRootDirectory ..."
+	$fileInfos = dir -Recurse $specRootDirectory -Include package.spec
+} else {
+	$fileInfos = $specFiles | %{ gi $_ }
+}
+$specs = $fileInfos | AsPackageSpec
+$specs | CallPackageScripts
+$specs | CopyToPackage
