@@ -11,13 +11,13 @@
 # The following examples assumes $PWD is the directory containing the key files.
 #
 # To add a credential:
-# setCredential "myserver"
-# setCredential "myserver" "myservice"
+# setCredential myserver
+# setCredential "myserver:winrm" username password
 # To retrieve a credential:
-# getCredential "myserver"
-# getCredential "myserver" "myservice"
+# getCredential myserver
+# getCredential "myserver:winrm"
 #
-# Use 
+# Use 'get-help getCredential' and 'get-help setCredential' for more options.
 $ScriptDir = $MyInvocation.MyCommand.Path | Split-Path
 [System.Reflection.Assembly]::LoadWithPartialName("System.Security") | out-null
 
