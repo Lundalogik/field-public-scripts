@@ -18,7 +18,6 @@
 # getCredential "myserver:winrm"
 #
 # Use 'get-help getCredential' and 'get-help setCredential' for more options.
-$ScriptDir = $MyInvocation.MyCommand.Path | Split-Path
 [System.Reflection.Assembly]::LoadWithPartialName("System.Security") | out-null
 
 function getAvailableCerts() {
@@ -58,9 +57,9 @@ function PKCSDecrypt($EncryptedString, $cert)
 
 function selectCertificate() {
 	$collection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection 
-	getAvailableCerts | ?{ $_.HasPrivateKey } | % { $collection.Add($_) } | Out-Null 
+	getAvailableCerts | ?{ $_.HasPrivateKey } | %{ $collection.Add($_) } | Out-Null 
 	$cert = [System.Security.Cryptography.x509Certificates.X509Certificate2UI]::SelectFromCollection( $collection, "Choose encryption key", "Select a certificate to encrypt your data with or click cancel to make a self signed certificate", 0) 
-	if($cert -eq $null) {
+	if(!$cert) {
 		Write-Host "No certificate selected. Creating a self-signed certificate.."
 		$cert = newCert
 	}
@@ -77,9 +76,12 @@ function setCredential {
 		[string] $password,
 		[parameter(mandatory=$true,position=1,parametersetname="PSCredential")]
 		[System.Management.Automation.PSCredential] $credential,
-		$cert = (selectCertificate),
+		$cert,
 		$store = (gi .)
 	)
+	if( $cert -eq $null ) {
+		$cert = selectCertificate
+	}
 	if( $credential -ne $null ) {
 		$networkcredential = $credential.GetNetworkCredential()
 		$username = $networkcredential.Username
@@ -106,9 +108,12 @@ function getCredential {
 		[string] $keyName, 
 		$store = (gi .)
 	)
-	$keyData = gc -Encoding Ascii -Path (keyFilePath $store $keyName)
-	$username,$password = (PKCSDecrypt $keyData[1] (getAvailableCerts | ?{ $_.Thumbprint -eq $keyData[0] })).Split(":")
-	new-object System.Management.Automation.PSCredential( $Username, (ConvertTo-SecureString -AsPlainText -Force -String $Password) )
+	$keyFile = keyFilePath $store $keyName
+	if( Test-Path -PathType Leaf $keyFile ) {
+		$keyData = gc -Encoding Ascii -Path $keyFile
+		$username,$password = (PKCSDecrypt $keyData[1] (getAvailableCerts | ?{ $_.Thumbprint -eq $keyData[0] })).Split(":")
+		new-object System.Management.Automation.PSCredential( $Username, (ConvertTo-SecureString -AsPlainText -Force -String $Password) )
+	}
 }	
 
 function newCert() {
