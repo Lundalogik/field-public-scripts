@@ -17,6 +17,10 @@
 # getCredential myserver
 # getCredential "myserver:winrm"
 #
+# Reminder: To export a cert from store to file
+# $cert = (gi cert:\CurrentUser\My\1234CERTHASH123412341234ETC ).Export( [System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, "chosenCertPass" )
+# sc -Path "certfile.pfx" -Value $cert -Encoding byte
+#
 # Use 'get-help getCredential' and 'get-help setCredential' for more options.
 [System.Reflection.Assembly]::LoadWithPartialName("System.Security") | out-null
 
