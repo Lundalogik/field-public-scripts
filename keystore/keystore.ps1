@@ -98,6 +98,18 @@ function setCredential {
 	}
 }
 
+function removeCredential {
+	param( 
+		[parameter(mandatory=$true)]
+		[string] $keyName, 
+		$store = (gi .)
+	)
+	$keyFile = keyFilePath $store $keyName
+	if( Test-Path -PathType Leaf $keyFile ) {
+		rm $keyFile -Confirm
+	}
+}
+
 function keyFilePath( $store, $keyName ) {
 	Join-Path $store ($keyName | sha)
 }
@@ -134,4 +146,13 @@ function newCert() {
 	}
 	$cert | select * | Out-Host
 	$cert
+}
+
+function randomPassword( $length = 25 ) {
+	$characters = 'abcdefghkmnprstuvwxyzABCDEFGHKLMNPRSTUVWXYZ123456789-,.!'
+	# select random characters
+	$random = 1..$length | ForEach-Object { Get-Random -Maximum $characters.length }
+	# output random pwd
+	$private:ofs=""
+	[String]$characters[$random]
 }
