@@ -185,6 +185,10 @@ filter AsPackageSpec {
 	}
 	if( IsValidSpecHash $spec ) {
 		HashToSpecObject $spec
+	} elseif( $spec['from'] -eq $null ) {
+		throw "Spec file is invalid: $specfile Missing 'from' directive"
+	} elseif( $spec['to'] -eq $null ) {
+		throw "Spec file is invalid: $specfile Missing 'to' directive"
 	}
 }
 
@@ -275,6 +279,7 @@ if( $specFiles -eq $null ) {
 } else {
 	$fileInfos = $specFiles | %{ gi $_ }
 }
+
 $specs = $fileInfos | AsPackageSpec
 $specs | CallPackageScripts
 $specs | CopyToPackage
