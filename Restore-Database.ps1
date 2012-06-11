@@ -12,24 +12,27 @@ param(
 	[parameter(mandatory=$true)]
 	[string] $backupFilePath,
 	[parameter(mandatory=$false)]
-	[hashtable] $datafilesWithMove
+	[hashtable] $datafilesWithMove,
+	[switch] $noCreate
 )
 
 $ScriptDir = $MyInvocation.MyCommand.Path | split-path
 . $ScriptDir\Sql.ps1 
 
-$SqlConnection = DbConnect $Server $null $Username $Password
-try {
-	write-host "Creating database, please wait..."
-	$createDbSql = @"
-		CREATE DATABASE $database
-		ALTER DATABASE $database SET ALLOW_SNAPSHOT_ISOLATION ON
-		ALTER DATABASE $database SET READ_COMMITTED_SNAPSHOT ON
-		ALTER DATABASE $database SET COMPATIBILITY_LEVEL = 100
+if( ! $noCreate ) {
+	$SqlConnection = DbConnect $Server $null $Username $Password
+	try {
+		write-host "Creating database, please wait..."
+		$createDbSql = @"
+			CREATE DATABASE $database
+			ALTER DATABASE $database SET ALLOW_SNAPSHOT_ISOLATION ON
+			ALTER DATABASE $database SET READ_COMMITTED_SNAPSHOT ON
+			ALTER DATABASE $database SET COMPATIBILITY_LEVEL = 100
 "@
-		$null = ExecuteNonQuery $SqlConnection $createDbSql
-} finally {
-	$SqlConnection.Dispose()
+			$null = ExecuteNonQuery $SqlConnection $createDbSql
+	} finally {
+		$SqlConnection.Dispose()
+	}
 }
 
 Write-Host "Restoring database $database on server $server from $backupFilePath"
