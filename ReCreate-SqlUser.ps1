@@ -7,6 +7,7 @@
 	[string] $password,
 	[string[]] $readers,
 	[string[]] $writers,
+	[string[]] $owners,
 	[string] $defaultSchema = 'dbo',
 	[switch] $force
 )
@@ -23,6 +24,7 @@ function addRoleMap( $user, $role ) {
 }
 $readers | %{ addRoleMap $_ 'db_datareader' }
 $writers | %{ addRoleMap $_ 'db_datawriter' }
+$owners | %{ addRoleMap $_ 'db_owner' }
 
 $Sql = ""
 $rolemap.Keys | %{ 
