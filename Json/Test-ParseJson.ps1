@@ -1,4 +1,4 @@
-﻿Set-Alias fromJson .\fromJson.ps1
+﻿Set-Alias fromJson .\Parse-Json.ps1
 
 function assert( [scriptblock] $action ) {
 	if( !$pipeline.Process( $_ ) ) {
