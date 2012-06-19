@@ -29,16 +29,20 @@ begin {
 				"]"
 			} elseif( $collection.Count -eq 1 ) {
 				$val = $collection | select -First 1
-				$type = $val.GetType()
-				if( $type -eq [DateTime] ) {
-					"""$($val.ToString('s'))Z"""
-				} elseif( $type.BaseType -eq [ValueType] ) {
-					$val
-				} else {
-					""""
-					$val.ToString()
-					""""
-				}
+                if($val){
+    				$type = $val.GetType()
+    				if( $type -eq [DateTime] ) {
+    					"""$($val.ToString('s'))Z"""
+    				} elseif( $type.BaseType -eq [ValueType] ) {
+    					$val
+    				} else {
+    					""""
+    					$val.ToString()
+    					""""
+    				}
+                }else{
+                    "null"
+                }
 			}
 			if( $firstProp ) { $firstProp = $false }
 		}
