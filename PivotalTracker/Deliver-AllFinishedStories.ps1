@@ -4,6 +4,7 @@
 .DESCRIPTION
 	Uses the "deliver_all_finished" endpoint in the PivotalTracker API.
 	The script returns the XML returned by the API as PowerShell objects.
+		
 	Example output:
 	
 Updated 3 finished stories
@@ -35,6 +36,9 @@ owned_by      : Johan Andersson
 created_at    : 2011/09/19 00:00:00 UTC
 updated_at    : 2011/09/26 16:12:25 UTC
 labels        : cart,shopping
+
+	Alternative to this script posted by Eric Mitchell:
+	http://ericmitchell.net/2012/04/03/using-the-pivotal-tracker-api-to-automatically-deliver-stories/
 
 #>
 param( 	
