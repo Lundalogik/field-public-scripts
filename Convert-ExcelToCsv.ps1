@@ -14,7 +14,9 @@ param(
 	[parameter(mandatory=$false)]
 	$filter = "*",
 	[parameter(mandatory=$false)]
-	$outputprefix
+	$outputprefix,
+	[parameter(mandatory=$false)]
+	[Switch] $noOutput
 )
 
 # Need some Win32 functionality to get the PID of the Excel app
@@ -51,9 +53,16 @@ $xl.Application.Interactive = $false
 $wb=$xl.workbooks.open($xls) 
 $xl.displayalerts=$False 
 $wb.Sheets | ?{ $_.Name -like $filter } | %{ 
-	$csvFile = "{0}_{1}.csv" -f $outputprefix,$_.Name
-	Write-Host "Saving sheet $($_.Name) ($($_.UsedRange.Rows.Count) rows) to $csvFile"
-	$_.SaveAs($csvFile, $xlCSV, $null, $null, $false, $false, $false)
+	$csvFile = New-Object psobject -Property @{ `
+		SheetName = $_.Name; `
+		RowCount = $_.UsedRange.Rows.Count; `
+		Path = ("{0}_{1}.csv" -f $outputprefix,$_.Name) `
+	}
+	Write-Host "Saving sheet $($csvFile.SheetName) ($($csvFile.RowCount) rows) to $($csvFile.Path)"
+	$_.SaveAs($csvFile.Path, $xlCSV, $null, $null, $false, $false, $false)
+	if(!$noOutput) {
+		$csvFile
+	}
 }
 
 # Discard all changes and close the file
