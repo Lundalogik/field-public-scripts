@@ -22,9 +22,9 @@ function addRoleMap( $user, $role ) {
 		$rolemap[$user] = $rolemap[$user] + $role
 	}
 }
-$readers | %{ addRoleMap $_ 'db_datareader' }
-$writers | %{ addRoleMap $_ 'db_datawriter' }
-$owners | %{ addRoleMap $_ 'db_owner' }
+$readers | ?{ $_ -ne $null } | %{ addRoleMap $_ 'db_datareader' }
+$writers | ?{ $_ -ne $null } | %{ addRoleMap $_ 'db_datawriter' }
+$owners | ?{ $_ -ne $null } | %{ addRoleMap $_ 'db_owner' }
 
 $Sql = ""
 $rolemap.Keys | %{ 
