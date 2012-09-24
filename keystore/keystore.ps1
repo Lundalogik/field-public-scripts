@@ -11,17 +11,18 @@
 # The following examples assumes $PWD is the directory containing the key files.
 #
 # To add a credential:
-# setCredential myserver
-# setCredential "myserver:winrm" username password
+# set-key myserver
+# set-key "myserver:winrm" username password
 # To retrieve a credential:
-# getCredential myserver
-# getCredential "myserver:winrm"
+# get-key myserver
+# get-key "myserver:winrm"
 #
-# Reminder: To export a cert from store to file
-# $cert = (gi cert:\CurrentUser\My\1234CERTHASH123412341234ETC ).Export( [System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, "chosenCertPass" )
-# sc -Path "certfile.pfx" -Value $cert -Encoding byte
+# To export a cert to a PFX:
+# export-certificate <thumbprint>
+# To select a cert:
+# select-certificate
 #
-# Use 'get-help getCredential' and 'get-help setCredential' for more options.
+# Use 'get-help get-key' and 'get-help set-key' for more options.
 [System.Reflection.Assembly]::LoadWithPartialName("System.Security") | out-null
 
 function getAvailableCerts() {
@@ -132,8 +133,7 @@ function getCredential {
 	}
 }	
 
-function newCert() {
-	$commonName = Read-Host -Prompt "Enter common name for certificate to be created"
+function newCert($commonName = (Read-Host -Prompt "Enter common name for certificate to be created")) {
 	$subject = "CN=$commonName"
 	$cert = getAvailableCerts | ?{ $_.Subject -eq $subject } | select -First 1
 	if( $cert -ne $null ) {
@@ -160,3 +160,32 @@ function randomPassword( $length = 25 ) {
 	$private:ofs=""
 	[String]$characters[$random]
 }
+
+function exportCertificate {
+	param( 
+		[parameter(mandatory=$true, valuefrompipelinebypropertyname=$true,parametersetname="Thumbprint")]
+		[string] $thumbprint,
+		[parameter(mandatory=$true, valuefrompipeline=$true, parametersetname="Certificate")]
+		[System.Security.Cryptography.X509Certificates.X509Certificate2] $certificate,
+		[parameter(mandatory=$true)]
+		[string] $Path,
+		[string] $Password
+	)
+	if( !$certificate -and $thumbprint ) {
+		$certificate = ls -Recurse cert: | ?{ $_.thumbprint -eq $thumbprint } | select -First 1
+	}
+	if( !$certificate ) {
+		throw "No cert found or no cert specified"
+	}
+	$certBytes = $certificate.Export( [System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $Password )
+	sc -Path $Path -Value $certBytes -Encoding byte
+	gi $Path
+}
+
+set-alias Get-Key getCredential
+set-alias Set-Key setCredential 
+set-alias Remove-Key removeCredential 
+set-alias New-Certificate newCert
+set-alias Select-Certificate selectCertificate
+set-alias Export-Certificate exportCertificate
+set-alias Get-RandomString randomPassword
