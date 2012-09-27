@@ -23,6 +23,8 @@
 	include *.xml,
 	*.xaml
 	
+	All lines that begins with a '#' character are treated as comments.
+	
 .EXAMPLE
 	Directory WebApp has the following structure:
 	Resources/logo.png
@@ -165,7 +167,7 @@ filter AsPackageSpec {
 	$lineNumber = 0
 	gc $specFile.FullName | %{
 		$lineNumber++
-		if( $_ -match "^([^\s]+)(\s+(.+))?$" ) {
+		if( $_ -match "^([^\s#]+)(\s+(.+))?$" ) {
 			if( $matches[1] -eq "from" -and (IsValidSpecHash $spec ) ) {
 				# yield spec, jump on to the next
 				HashToSpecObject $spec
@@ -179,7 +181,7 @@ filter AsPackageSpec {
 			$spec[$matches[1]] = $val
 			$lastKey = $matches[1]
 		}
-		if( $_ -match "^\s+(.+)$" ) {
+		if( $_ -match "^\s+([^#].*)$" ) {
 			$spec[$lastKey] += $matches[1]
 		}
 	}
