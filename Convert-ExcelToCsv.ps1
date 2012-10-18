@@ -11,8 +11,10 @@
 param( 
 	[parameter(mandatory=$true)]
 	$excelFile,
-	[parameter(mandatory=$false)]
+	[parameter(mandatory=$false, parametersetname="filter")]
 	$filter = "*",
+	[parameter(mandatory=$false, parametersetname="sheetnames")]
+	[String[]] $sheetName,
 	[parameter(mandatory=$false)]
 	$outputprefix,
 	[parameter(mandatory=$false)]
@@ -52,19 +54,22 @@ $thread.CurrentCulture = New-Object System.Globalization.CultureInfo("en-US")
 $xl.Application.Interactive = $false
 $wb=$xl.workbooks.open($xls) 
 $xl.displayalerts=$False 
-$wb.Sheets | ?{ $_.Name -like $filter } | %{ 
-	$csvFile = New-Object psobject -Property @{ `
-		SheetName = $_.Name; `
-		RowCount = $_.UsedRange.Rows.Count; `
-		Path = ("{0}_{1}.csv" -f $outputprefix,$_.Name) `
-	}
-	Write-Host "Saving sheet $($csvFile.SheetName) ($($csvFile.RowCount) rows) to $($csvFile.Path)"
-	$_.SaveAs($csvFile.Path, $xlCSV, $null, $null, $false, $false, $false)
-	if(!$noOutput) {
-		$csvFile
+$selectedSheets = $wb.Sheets | ?{ (!$sheetName -and $_.Name -like $filter) -or $sheetName -contains $_.Name }
+Write-Host "Selected $($selectedSheets | measure | select -expandproperty Count) sheets"
+if( $selectedSheets ) {
+	$selectedSheets | %{ 
+		$csvFile = New-Object psobject -Property @{ `
+			SheetName = $_.Name; `
+			RowCount = $_.UsedRange.Rows.Count; `
+			Path = ("{0}_{1}.csv" -f $outputprefix,$_.Name) `
+		}
+		Write-Host "Saving sheet $($csvFile.SheetName) ($($csvFile.RowCount) rows) to $($csvFile.Path)"
+		$_.SaveAs($csvFile.Path, $xlCSV, $null, $null, $false, $false, $false)
+		if(!$noOutput) {
+			$csvFile
+		}
 	}
 }
-
 # Discard all changes and close the file
 $wb.Saved = $true
 $wb.close($false)
