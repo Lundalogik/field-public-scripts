@@ -10,7 +10,7 @@
 .PARAMETER AutomaticUpdatesOnly
 	Default. Will add the criteria IsAssigned=1 when looking for updates
 .PARAMETER AllowReboot
-	Default. Will reboot the system after installation if any installed update may require this.
+	Default. Will allow installation of updates that requires a system reboot.
 .PARAMETER WhatIf
 	The script will only tell what updates it would install without the switch 
 .PARAMETER Force
@@ -21,6 +21,7 @@
 param(
 	[Switch] $SoftwareOnly = [Switch]::Present,
 	[Switch] $AutomaticUpdatesOnly = [Switch]::Present,
+	[Switch] $OptionalUpdates,
 	[Switch] $AllowReboot = [Switch]::Present,
 	[Switch] $WhatIf,
 	[Switch] $Force
@@ -63,6 +64,9 @@ if( $AutomaticUpdatesOnly ) {
 }
 if( $SoftwareOnly ) {
 	$criteria += " and Type='Software'"
+}
+if( $OptionalUpdates ) {
+	$criteria += " and BrowseOnly=1"
 }
 
 function GetUpdates( $criteria ) {
@@ -149,8 +153,7 @@ if( $WhatIf ) {
 		throw "Installation failed. Result: $($installResult.Result.ResultCode)"
 	}
 	
-	if( $installResult.Result.RebootRequired -and $AllowReboot ) {
-		Write-Host "Rebooting system..."
-		Restart-Computer -Force
+	if( $installResult.Result.RebootRequired ) {
+		Write-Host "The system needs to be rebooted to complete the update process."
 	}
 }
