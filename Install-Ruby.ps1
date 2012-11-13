@@ -98,13 +98,11 @@ Push-Location $destination\devkit
 ruby dk.rb init
 " - $($destination.Replace('\','/'))" | Out-File -Append -FilePath config.yml -Encoding ASCII
 ruby dk.rb install
+Pop-Location
 gem install rdiscount --platform=ruby
-$testOut = [System.IO.Path]::GetTempFileName()
-$testErr = [System.IO.Path]::GetTempFileName()
 $test = cmd.exe /c $rubyExe -rubygems -e "require 'rdiscount'; puts RDiscount.new('**Hello RubyInstaller**').to_html"
 if( $test -like "*<strong>Hello RubyInstaller</strong>*" ) {
 	Write-Host "Installation of devkit and building of gem rdiscount verified successfully!"
 } else {
 	Write-Host "Oh my! Failed to verify devkit ability to build gem rdiscount.: $test"
 }
-Pop-Location
