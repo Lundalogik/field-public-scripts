@@ -30,7 +30,7 @@ $TaskXml = @"
         <Exec>
 	      <Command>%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe</Command>
     	  <Arguments>-NonInteractive -Command "&amp; '.\Install-Updates.ps1' -EnableAutomaticUpdates -AllowReboot -Force"</Arguments>
-		  <WorkingDirectory>c:\RemoteX\Scripts</WorkingDirectory>
+		  <WorkingDirectory>$ScriptDir</WorkingDirectory>
         </Exec>
     </Actions>
 </Task>
