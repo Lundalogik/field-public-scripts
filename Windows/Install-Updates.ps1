@@ -23,9 +23,12 @@ param(
 	[Switch] $AutomaticUpdatesOnly = [Switch]::Present,
 	[Switch] $OptionalUpdates,
 	[Switch] $AllowReboot = [Switch]::Present,
+	[Switch] $EnableAutomaticUpdates,
 	[Switch] $WhatIf,
 	[Switch] $Force
 )
+$ScriptDir = $MyInvocation.MyCommand.Path | split-path
+
 filter Tell {
 	$action = @()
 	if( !$_.IsDownloaded ) {
@@ -131,6 +134,11 @@ if( $updates.Count -eq 0) {
 if( $WhatIf ) {
 	$updates | Tell | ft -AutoSize
 } else {
+	if( $EnableAutomaticUpdates ) {
+		Set-Alias enableAutomaticUpdates $ScriptDir\Enable-AutomaticUpdates.ps1
+		enableAutomaticUpdates
+	}
+
 	$acceptedUpdates = $updates | AcceptedUpdates
 	DownloadUpdates $acceptedUpdates
 	
