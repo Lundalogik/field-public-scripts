@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="RunTestsInParallel" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- 
+  1. Start with the boilerplate and save to mytests.proj:
+    <Project DefaultTargets="RunTestsInParallel" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+      <Import Project="RunNunitTestsInParallel.targets"/>
+    </Project>
+  
+  This will build **\*test*.csproj and run nunit for targets matching **\bin\Release\*test*.dll.
+  
+  2. If you need to run nunit x86 for some projects you need to add something like this to your file:
+    <ItemGroup> 
+	    <TestDllsX86 Include="X86Lib\LibTests\bin\Release\LibTests.dll" />
+    </ItemGroup>
+  
+  3. To ignore files from being tested (if you have not explictly defined your own TestDlls items):
+    <ItemGroup> 
+	    <TestIgnore Include="**\TestingTools.dll" />
+    </ItemGroup>
+
+  Build and run tests using: msbuild mytests.proj
+  
+-->
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <NunitConsole Condition=" '$(NunitConsole)' == '' ">$(HUDSON_HOME)\..\bin\nunit-console.exe</NunitConsole>
+    <NunitConsoleX86 Condition=" '$(NunitConsoleX86)' == '' ">$(HUDSON_HOME)\..\bin\nunit-console-x86.exe</NunitConsoleX86>
+    <BuildTestProjects Condition="'$(BuildTestProjects)' == ''">True</BuildTestProjects>
+  </PropertyGroup>
+
+  <!-- see http://mikefourie.wordpress.com/2010/12/04/running-targets-in-parallel-in-msbuild/ -->
+
+  <Target Name="RunTestsInParallel">
+    <ItemGroup>
+      <TestDlls Condition=" '@(TestDlls)' == '' " Include="**\bin\Release\*test*.dll" Exclude="@(TestDllsX86);@(TestIgnore)" />
+      <TestProjects Condition=" '@(TestProjects)' == '' " Include="**\*test*.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <TempProjects Include="$(MSBuildProjectFile)" >
+        <Properties>TestDllFile=%(TestDlls.FullPath);Nunit=$(NunitConsole)</Properties>
+      </TempProjects>
+      <TempProjects Include="$(MSBuildProjectFile)" >
+        <Properties>TestDllFile=%(TestDllsX86.FullPath);Nunit=$(NunitConsoleX86)</Properties>
+      </TempProjects>
+      <ProjectsToBuild Include="@(TestProjects)" Exclude="@(ProjectIgnore)" />
+    </ItemGroup>
+
+    <MSBuild Condition=" '$(BuildTestProjects)' == 'True' " Projects="@(ProjectsToBuild)" BuildInParallel="true" Properties="Configuration=Release;Platform=AnyCPU" />
+    <MSBuild Projects="@(TempProjects)" BuildInParallel="true" Targets="RunOneTestDll" />
+  </Target>
+
+  <Target Name="RunOneTestDll" Condition=" '$(TestDllFile)' != '' ">
+    <ItemGroup>
+      <TestDllWorkingDir Include="%(TestDllFile.Directory)"/>
+    </ItemGroup>
+    <Message Text="$(TestDllFile)" />
+    <Exec Command="$(Nunit) &quot;$(TestDllFile)&quot; /labels /xml:&quot;$(TestDllFile).results.xml&quot;"
+      WorkingDirectory="$(TestDllWorkingDir)" />
+  </Target>
+
+</Project>
