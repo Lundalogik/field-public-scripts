@@ -87,14 +87,20 @@ function setCredential {
 	if( $cert -eq $null ) {
 		$cert = selectCertificate
 	}
+
 	if( $credential -ne $null ) {
 		$networkcredential = $credential.GetNetworkCredential()
 		$username = $networkcredential.Username
 		$password = $networkcredential.Password
 	}
+
 	if( !($username -and $password) ) {
 		throw "Must specify credential or non-empty username+password"
 		return
+	}
+
+	if( $cert.GetType().Name -eq "String" ) {
+		$cert = ls cert:\CurrentUser\My | ?{ $_.Subject -match $cert } | select -first 1
 	}
 	sc -Encoding Ascii -Path (keyFilePath $store $keyName) -Value @( $cert.Thumbprint, (PKCSEncrypt "${username}:${password}" $cert) )
 	$cred = (getCredential -keyName $keyName -store $store).GetNetworkCredential()
