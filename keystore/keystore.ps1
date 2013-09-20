@@ -39,7 +39,7 @@ filter SHA {
 	$str.ToString()
 }
 
-function PKCSEncrypt($stringToEncrypt, $cert)
+function PKCSEncrypt( [string] $stringToEncrypt, [System.Security.Cryptography.X509Certificates.X509Certificate2] $cert)
 {
     $passbytes = [Text.Encoding]::UTF8.GetBytes($stringToEncrypt)
     $content = New-Object Security.Cryptography.Pkcs.ContentInfo -argumentList (,$passbytes)
@@ -49,7 +49,7 @@ function PKCSEncrypt($stringToEncrypt, $cert)
     [Convert]::Tobase64String($env.Encode())
 }
 
-function PKCSDecrypt($EncryptedString, $cert)
+function PKCSDecrypt( [string] $EncryptedString, [System.Security.Cryptography.X509Certificates.X509Certificate2] $cert)
 {
     $encodedBytes = [Convert]::Frombase64String($EncryptedString)
     $env = New-Object Security.Cryptography.Pkcs.EnvelopedCms
