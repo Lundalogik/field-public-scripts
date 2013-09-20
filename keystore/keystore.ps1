@@ -68,6 +68,10 @@ function PKCSDecrypt(
 }
 
 function selectCertificate() {
+	$startInfo = Get-Process -id $PID | select -ExpandProperty StartInfo
+	if( $null -ne $startInfo -and $startInfo.Arguments -imatch "-noninteractive" ) {
+		throw "Cannot select certificate interactively when PowerShell is executed with -NonInteractive"
+	}
 	$collection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection 
 	getAvailableCerts | ?{ $_.HasPrivateKey } | %{ $collection.Add($_) } | Out-Null 
 	$cert = [System.Security.Cryptography.x509Certificates.X509Certificate2UI]::SelectFromCollection( $collection, "Choose encryption key", "Select a certificate to encrypt your data with or click cancel to make a self signed certificate", 0) 
