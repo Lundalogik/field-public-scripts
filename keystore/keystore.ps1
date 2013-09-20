@@ -6,7 +6,6 @@
 # Usage: dot-source this file 
 #
 # MakeCert.exe is required to make self-signed certificates.
-# All certificates are assumed to exist in cert:\currentuser\my.
 #
 # The following examples assumes $PWD is the directory containing the key files.
 #
@@ -26,7 +25,7 @@
 [System.Reflection.Assembly]::LoadWithPartialName("System.Security") | out-null
 
 function getAvailableCerts() {
-	ls cert:\CurrentUser\My
+	ls -Recurse cert:
 }
 
 filter SHA {
@@ -108,7 +107,7 @@ function setCredential {
 	}
 
 	if( $cert.GetType().Name -eq "String" ) {
-		$cert = ls cert:\CurrentUser\My | ?{ $_.Subject -match $cert } | select -first 1
+		$cert = getAvailableCerts | ?{ $_.Subject -match $cert } | select -first 1
 	}
 	sc -Encoding Ascii -Path (keyFilePath $store $keyName) -Value @( $cert.Thumbprint, (PKCSEncrypt "${username}:${password}" $cert) )
 	$cred = (getCredential -keyName $keyName -store $store).GetNetworkCredential()
@@ -186,7 +185,7 @@ function exportCertificate {
 		[string] $Password
 	)
 	if( !$certificate -and $thumbprint ) {
-		$certificate = ls -Recurse cert: | ?{ $_.thumbprint -eq $thumbprint } | select -First 1
+		$certificate = getAvailableCerts | ?{ $_.thumbprint -eq $thumbprint } | select -First 1
 	}
 	if( !$certificate ) {
 		throw "No cert found or no cert specified"
