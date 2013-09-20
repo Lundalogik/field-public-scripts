@@ -145,7 +145,11 @@ function getCredential {
 	$keyFile = keyFilePath $store $keyName
 	if( Test-Path -PathType Leaf $keyFile ) {
 		$keyData = gc -Encoding Ascii -Path $keyFile
-		$username,$password = (PKCSDecrypt $keyData[1] (getAvailableCerts | ?{ $_.Thumbprint -eq $keyData[0] })).Split(":")
+		$cert = getAvailableCerts | ?{ $_.Thumbprint -eq $keyData[0] }
+		if(!$cert) {
+			throw ("Cannot find the requested certificate: {0}" -f $keyData[0])
+		}
+		$username,$password = (PKCSDecrypt $keyData[1] $cert).Split(":")
 		new-object System.Management.Automation.PSCredential( $Username, (ConvertTo-SecureString -AsPlainText -Force -String $Password) )
 	}
 }	
