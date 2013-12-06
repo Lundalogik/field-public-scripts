@@ -31,12 +31,11 @@ if( !$RoomNumber ) {
 }
 
 $postUrl = "https://{0}.campfirenow.com/room/{1}/speak.json" -f $SubDomain, $RoomNumber
-$msg = New-Object psobject -Property @{ body = $Body }
+$msg = @{ body = $Body }
 if( $PlaySound ) {
-	$msg | Add-Member -MemberType NoteProperty -Name "type" -Value "SoundMessage"
+	$msg.type = "SoundMessage"
 }
-$payload = New-Object psobject -Property @{ message = $msg }
-$result = $payload | convertto-json -compress | curl -i -u "${AuthToken}:X" -H 'Content-Type: application/json' -d `@- $postUrl 2>&1
+$result = @{ message = $msg } | convertto-json -compress | curl -i -u "${AuthToken}:X" -H 'Content-Type: application/json' -d `@- $postUrl 2>&1
 if ( !($result | ?{ $_ -match "Created$" }) ) {
 	Write-Host "Error posting message to Campfire" -foregroundcolor red
 }
