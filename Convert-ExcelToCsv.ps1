@@ -65,8 +65,6 @@ if( $selectedSheets ) {
 		}
 		Write-Host "Saving sheet $($csvFile.SheetName) ($($csvFile.RowCount) rows) to $($csvFile.Path)"
 		$_.SaveAs($csvFile.Path, $xlCSV, $null, $null, $false, $false, $false)
-		#excel exported csv files seem to always end with a comma?
-		gc $csvFile.Path | ?{ $_ -match "[^,]$" } | %{ Write-Error "`nThis line looks suspicious, abort script if it is unintentional `n$_"}
 		if(!$noOutput) {
 			$csvFile
 		}
