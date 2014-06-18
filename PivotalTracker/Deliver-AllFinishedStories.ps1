@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 	Delivers all finished stories in PivotalTracker and outputs the stories as PowerShell objects
 .DESCRIPTION

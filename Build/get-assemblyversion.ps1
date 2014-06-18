@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 	Reads the AssemblyVersion attribute from a .CS file and returns an object representation of the version
 .DESCRIPTION

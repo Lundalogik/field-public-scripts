@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 	make-package.ps1 is a tool which reads packaging instructions from files named "package.spec" and executes them. 
 .DESCRIPTION

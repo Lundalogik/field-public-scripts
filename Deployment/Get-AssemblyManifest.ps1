@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 	Takes an URL or path to an application manifest file and summarizes its contents.
 	Useful for verifying the contents of an application deployed using ClickOnce or an VSTO plugin.

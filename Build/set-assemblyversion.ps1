@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 	Writes the AssemblyVersion attribute version to a specified .CS file path
 .DESCRIPTION

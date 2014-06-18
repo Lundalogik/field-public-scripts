@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 	A statsd client in PowerShell which allows sending data to a statsd server over UDP.
 .DESCRIPTION
