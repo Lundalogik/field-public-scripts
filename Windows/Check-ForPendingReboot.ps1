@@ -3,7 +3,7 @@ $needsReboot = Test-Path $requiresRebootKey
 if( $needsReboot ) {
     $UpdateSession = New-Object -ComObject Microsoft.Update.Session
     $searcher = $UpdateSession.CreateUpdateSearcher()
-    $updateIds = Get-Item $requiresRebootKey | select -ExpandProperty Property
+    $updateIds = Get-Item $requiresRebootKey | select -ExpandProperty Property | ?{ $_.Contains("-") }
     Write-Host ("There are {0} pending updates which requires a reboot" -f ($updateIds | measure).Count)
     if( $updateIds ) {
         $criteria = [String]::Join( " OR ", ( $updateIds | %{ "UpdateId='$_'" } ) )
