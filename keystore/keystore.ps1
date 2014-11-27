@@ -61,7 +61,11 @@ function PKCSDecrypt(
     $encodedBytes = [Convert]::Frombase64String($EncryptedString)
     $env = New-Object Security.Cryptography.Pkcs.EnvelopedCms
     $env.Decode($encodedBytes)
-    $env.Decrypt($cert)
+    try {
+    	$env.Decrypt($cert)
+	} catch {
+		throw "Failed to decrypt the credential using the given certificate."
+	}
     $enc = New-Object System.Text.ASCIIEncoding
 
     $enc.GetString($env.ContentInfo.Content)
@@ -114,8 +118,14 @@ function setCredential {
 		$cert = getAvailableCerts | ?{ $_.Subject -match $cert } | select -first 1
 	}
 	sc -Encoding Ascii -Path (keyFilePath $store $keyName) -Value @( $cert.Thumbprint, (PKCSEncrypt "${username}:${password}" $cert) )
-	$cred = (getCredential -keyName $keyName -store $store).GetNetworkCredential()
-	if( $cred.Username -ne $username -or $cred.Password -ne $password ) {
+	$cred = getCredential -keyName $keyName -store $store
+	if( $cred ) {
+		$networkcredential = $cred.GetNetworkCredential()
+	} else {
+		$networkcredential = $null
+	}
+
+	if( !$networkcredential -or $networkcredential.Username -ne $username -or $networkcredential.Password -ne $password ) {
 		throw "Failed to encrypt credential"
 	}
 }
@@ -145,12 +155,14 @@ function getCredential {
 	$keyFile = keyFilePath $store $keyName
 	if( Test-Path -PathType Leaf $keyFile ) {
 		$keyData = gc -Encoding Ascii -Path $keyFile
-		$cert = getAvailableCerts | ?{ $_.Thumbprint -eq $keyData[0] }
+		$cert = getAvailableCerts | ?{ $_.Thumbprint -eq $keyData[0] } | select -first 1
 		if(!$cert) {
 			throw ("Cannot find the requested certificate: {0}" -f $keyData[0])
 		}
 		$username,$password = (PKCSDecrypt $keyData[1] $cert).Split(":")
-		new-object System.Management.Automation.PSCredential( $Username, (ConvertTo-SecureString -AsPlainText -Force -String $Password) )
+		if($username -and $password) {
+			new-object System.Management.Automation.PSCredential( $Username, (ConvertTo-SecureString -AsPlainText -Force -String $Password) )
+		}
 	}
 }	
 
