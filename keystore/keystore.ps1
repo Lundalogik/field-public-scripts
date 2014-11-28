@@ -7,25 +7,66 @@
 #
 # MakeCert.exe is required to make self-signed certificates.
 #
-# The following examples assumes $PWD is the directory containing the key files.
+# The following examples uses the current directory to store the key files.
+# If a custom directory is to be used, one may specify -store <directory>.
+# To use a shared keystore for the current user, one may use -userProfile
+# which is the same as -store $env:userProfile\.keystore, but will also
+# create the .keystore-directory if not present.
 #
 # To add a credential:
+#
 # set-key myserver
 # set-key "myserver:winrm" username password
+#
 # To retrieve a credential:
+#
 # get-key myserver
 # get-key "myserver:winrm"
 #
 # To export a cert to a PFX:
+#
 # export-certificate <thumbprint>
+#
 # To select a cert:
+#
 # select-certificate
+#
+# To get a key from the current directory:
+#
+# get-key myserver
+#
+# To get the key from c:\temp
+#
+# get-key myserver -store c:\temp
+#
+# To get the key from c:\Users\foo\.keystore (logged on as user named foo):
+#
+# get-key myserver -userProfile
+#  -or-
+# get-key myserver -store $env:userProfile\.keystore
+#
+# To save a credential to $env:userProfile\.keystore and create the store
+# if not present in $env:userProfile:
+#
+# Set-Key "http://foo" -userProfile -username "user" -password "pass"
+#
+# Retrieve the key using:
+# 
+# Get-Key "http://foo" -userProfile
 #
 # Use 'get-help get-key' and 'get-help set-key' for more options.
 [System.Reflection.Assembly]::LoadWithPartialName("System.Security") | out-null
 
 function getAvailableCerts() {
 	ls -Recurse cert:
+}
+
+function getUserLocalStore() {
+	$localUserStore = join-path $env:userprofile ".keystore"
+	if( !(test-path $localUserStore ) ) {
+		mkdir $localUserStore | out-null
+	}
+	$localUserStore
 }
 
 filter SHA {
@@ -44,12 +85,12 @@ function PKCSEncrypt(
 	[parameter(mandatory=$true)] 
 	[System.Security.Cryptography.X509Certificates.X509Certificate2] $cert)
 {
-    $passbytes = [Text.Encoding]::UTF8.GetBytes($stringToEncrypt)
-    $content = New-Object Security.Cryptography.Pkcs.ContentInfo -argumentList (,$passbytes)
-    $env = New-Object Security.Cryptography.Pkcs.EnvelopedCms $content
-    $env.Encrypt((new-object System.Security.Cryptography.Pkcs.CmsRecipient($cert)))
+	$passbytes = [Text.Encoding]::UTF8.GetBytes($stringToEncrypt)
+	$content = New-Object Security.Cryptography.Pkcs.ContentInfo -argumentList (,$passbytes)
+	$env = New-Object Security.Cryptography.Pkcs.EnvelopedCms $content
+	$env.Encrypt((new-object System.Security.Cryptography.Pkcs.CmsRecipient($cert)))
 
-    [Convert]::Tobase64String($env.Encode())
+	[Convert]::Tobase64String($env.Encode())
 }
 
 function PKCSDecrypt( 
@@ -58,17 +99,17 @@ function PKCSDecrypt(
 	[parameter(mandatory=$true)] 
 	[System.Security.Cryptography.X509Certificates.X509Certificate2] $cert)
 {
-    $encodedBytes = [Convert]::Frombase64String($EncryptedString)
-    $env = New-Object Security.Cryptography.Pkcs.EnvelopedCms
-    $env.Decode($encodedBytes)
-    try {
-    	$env.Decrypt($cert)
+	$encodedBytes = [Convert]::Frombase64String($EncryptedString)
+	$env = New-Object Security.Cryptography.Pkcs.EnvelopedCms
+	$env.Decode($encodedBytes)
+	try {
+		$env.Decrypt($cert)
 	} catch {
 		throw "Failed to decrypt the credential using the given certificate."
 	}
-    $enc = New-Object System.Text.ASCIIEncoding
+	$enc = New-Object System.Text.ASCIIEncoding
 
-    $enc.GetString($env.ContentInfo.Content)
+	$enc.GetString($env.ContentInfo.Content)
 }
 
 function selectCertificate() {
@@ -97,14 +138,15 @@ function setCredential {
 		[parameter(mandatory=$true,position=1,parametersetname="PSCredential")]
 		[System.Management.Automation.PSCredential] $credential,
 		$cert,
-		$store = (gi .)
+		$store = (gi .),
+		[switch] $userProfile
 	)
 	if( $cert -eq $null ) {
 		$cert = selectCertificate
 	}
 
 	if( $credential -ne $null ) {
-		$networkcredential = $credential.GetNetworkCredential()
+		$networkcredential = $credential | getNetworkCredential
 		$username = $networkcredential.Username
 		$password = $networkcredential.Password
 	}
@@ -117,10 +159,15 @@ function setCredential {
 	if( $cert.GetType().Name -eq "String" ) {
 		$cert = getAvailableCerts | ?{ $_.Subject -match $cert } | select -first 1
 	}
+
+	if($userProfile) {
+		$store = getUserLocalStore
+	}
+
 	sc -Encoding Ascii -Path (keyFilePath $store $keyName) -Value @( $cert.Thumbprint, (PKCSEncrypt "${username}:${password}" $cert) )
 	$cred = getCredential -keyName $keyName -store $store
 	if( $cred ) {
-		$networkcredential = $cred.GetNetworkCredential()
+		$networkcredential = $cred | getNetworkCredential
 	} else {
 		$networkcredential = $null
 	}
@@ -134,8 +181,14 @@ function removeCredential {
 	param( 
 		[parameter(mandatory=$true)]
 		[string] $keyName, 
-		$store = (gi .)
+		$store = (gi .),
+		[switch] $userProfile
 	)
+
+	if($userProfile) {
+		$store = getUserLocalStore
+	}
+
 	$keyFile = keyFilePath $store $keyName
 	if( Test-Path -PathType Leaf $keyFile ) {
 		rm $keyFile -Confirm
@@ -150,8 +203,14 @@ function getCredential {
 	param( 
 		[parameter(mandatory=$true)]
 		[string] $keyName, 
-		$store = (gi .)
+		$store = (gi .),
+		[switch] $userProfile
 	)
+
+	if($userProfile) {
+		$store = getUserLocalStore
+	}
+
 	$keyFile = keyFilePath $store $keyName
 	if( Test-Path -PathType Leaf $keyFile ) {
 		$keyData = gc -Encoding Ascii -Path $keyFile
@@ -215,6 +274,31 @@ function exportCertificate {
 	gi $Path
 }
 
+function getNetworkCredential {
+	param( 
+		[parameter(mandatory=$true, valuefrompipeline=$true)]
+		[System.Management.Automation.PSCredential] $credential
+	)
+	process {
+		if( $credential -ne $null ) {
+			$credential.GetNetworkCredential()
+		}
+	}
+}
+
+function getCurlCredential {
+	param( 
+		[parameter(mandatory=$true, valuefrompipeline=$true)]
+		[System.Management.Automation.PSCredential] $credential
+	)
+	process {
+		$nc = $credential | Get-NetworkCredential
+		if( $nc -ne $null ) {
+			"{0}:{1}" -f $nc.Username, $nc.Password
+		}
+	}
+}
+
 set-alias Get-Key getCredential
 set-alias Set-Key setCredential 
 set-alias Remove-Key removeCredential 
@@ -222,3 +306,6 @@ set-alias New-Certificate newCert
 set-alias Select-Certificate selectCertificate
 set-alias Export-Certificate exportCertificate
 set-alias Get-RandomString randomPassword
+set-alias Get-UserLocalKeyStore getUserLocalStore
+set-alias Get-NetworkCredential getNetworkCredential
+set-alias Get-CurlCredential getCurlCredential
