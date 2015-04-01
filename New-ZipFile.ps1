@@ -24,17 +24,14 @@ param(
 	)
 begin {
 	Add-type -AssemblyName "System.IO.Compression.FileSystem"
-	if(Test-Path $target) { Remove-Item $target }
+	if(Test-Path $target) { Remove-Item $target -force }
 	$zip = [System.IO.Compression.ZipFile]::Open( $target, "Create" )
 }
 process {
-	$file = Split-Path -Leaf $files
-	Split-Path $files | Push-Location
 	$files | Resolve-Path | ls -recurse -force -file | % FullName | % {
 		$relativePath = Resolve-Path $_ -Relative
 		[void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_, $relativePath.TrimStart(".\"), [System.IO.Compression.CompressionLevel]::Optimal)
 	}
-	Pop-Location
 }
 end {
 	$zip.Dispose()
