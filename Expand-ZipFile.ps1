@@ -34,6 +34,10 @@ try {
 		if( $_.Name -eq '' ) {
 			mkdir $entryPath -force
 		} else {
+			$directory = $entryPath | Split-Path
+			if( !(Test-Path $directory)) {
+				mkdir $directory -force
+			}
 			[System.IO.Compression.ZipFileExtensions]::ExtractToFile( $_, $entryPath, $true )
 		}
 	}
