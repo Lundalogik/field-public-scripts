@@ -20,6 +20,7 @@ param(
 	$path,
 	$target = $pwd
 )
+Add-type -AssemblyName "System.IO.Compression.FileSystem"
 $path = Resolve-Path $path | % Path
 
 if( !(Test-Path $target)) {

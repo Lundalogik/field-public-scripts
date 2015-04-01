@@ -23,6 +23,7 @@ param(
 	[string[]]$files
 	)
 begin {
+	Add-type -AssemblyName "System.IO.Compression.FileSystem"
 	if(Test-Path $target) { Remove-Item $target }
 	$zip = [System.IO.Compression.ZipFile]::Open( $target, "Create" )
 }
