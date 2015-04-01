@@ -172,7 +172,7 @@ function setCredential {
 		$networkcredential = $null
 	}
 
-	if( !$networkcredential -or $networkcredential.Username -ne $username -or $networkcredential.Password -ne $password ) {
+	if( $networkcredential -and ( $networkcredential.Username -ne $username -or $networkcredential.Password -ne $password ) ) {
 		throw "Failed to encrypt credential"
 	}
 }
