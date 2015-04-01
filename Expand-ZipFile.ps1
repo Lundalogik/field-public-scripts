@@ -29,7 +29,14 @@ if( !(Test-Path $target)) {
 
 $zip = [System.IO.Compression.ZipFile]::Open( $path, "Read" )
 try {
-	[System.IO.Compression.ZipFileExtensions]::ExtractToDirectory( $zip, $target )
+	$zip.Entries | % {
+		$entryPath = join-path $target $_.FullName
+		if( $_.Name -eq '' ) {
+			mkdir $entryPath -force
+		} else {
+			[System.IO.Compression.ZipFileExtensions]::ExtractToFile( $_, $entryPath, $true )
+		}
+	}
 } finally {
 	if( $zip -ne $null ) {
 		$zip.Dispose()
