@@ -145,7 +145,7 @@ function HashToSpecObject( $hash ) {
 	# Make arrays of include and exclude
 	"include","exclude" | %{
 		if( $hash[$_] -ne $null ) {
-			$hash[$_] = $hash[$_].Split(",")
+			$hash[$_] = $hash[$_].Split(",") | %{ $_.Trim() }
 		}
 	}
 	new-object PSObject -Property $hash
