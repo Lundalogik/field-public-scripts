@@ -45,6 +45,8 @@ param(
 	[int] $Count,
 	[parameter(parametersetname="Counter")]
 	[decimal] $SampleRate = 1,
+	[parameter(mandatory=$true, parametersetname="Gauge")]
+	[int] $gauge,
 	[parameter(mandatory=$true, parametersetname="Timing")]
 	[int] $Milliseconds
 )
@@ -79,6 +81,7 @@ switch( $PSCmdlet.ParameterSetName ) {
 			$RecordTail += "|@{0}" -f $SampleRate.ToString( [System.Globalization.CultureInfo]::InvariantCulture )
 		}
 	}
+	"Gauge" { $Count = $gauge; $RecordTail = "g" }
 	"Timing" { $Count = $Milliseconds; $RecordTail = "ms" }
 }
 
