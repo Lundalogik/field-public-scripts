@@ -1,8 +1,9 @@
-﻿$ScriptDir = $MyInvocation.MyCommand.Path | split-path
-Set-Alias registerTask $ScriptDir\Register-TaskForWindowsUpdate.ps1
-Set-Alias getTask $ScriptDir\Get-Task.ps1
-Set-Alias checkForPendingReboot $ScriptDir\Check-ForPendingReboot.ps1
-$task = registerTask
+param( [switch] $OptionalUpdates )
+
+Set-Alias registerTask ( join-path -resolve $PSScriptRoot "Register-TaskForWindowsUpdate.ps1" )
+Set-Alias getTask ( join-path -resolve $PSScriptRoot "Get-Task.ps1" )
+Set-Alias checkForPendingReboot ( join-path -resolve $PSScriptRoot "Check-ForPendingReboot.ps1" )
+$task = registerTask -OptionalUpdates:$OptionalUpdates
 $task.Run()
 do {
 	sleep -Seconds 10

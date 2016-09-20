@@ -1,5 +1,12 @@
-﻿$ScriptDir = $MyInvocation.MyCommand.Path | split-path
+param( [switch] $OptionalUpdates )
+
+$ScriptDir = $MyInvocation.MyCommand.Path | split-path
 Set-Alias getTask $ScriptDir\Get-Task.ps1
+
+$OptionalUpdatesSwitch = ""
+if( $OptionalUpdates ) {
+  $OptionalUpdatesSwitch = "-OptionalUpdates"
+}
 
 $ST = new-object -com("Schedule.Service")
 $ST.connect( $env:COMPUTERNAME )
@@ -29,7 +36,7 @@ $TaskXml = @"
     <Actions>
         <Exec>
 	      <Command>%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe</Command>
-    	  <Arguments>-NonInteractive -Command "&amp; '.\Install-Updates.ps1' -EnableAutomaticUpdates -AllowReboot -Force"</Arguments>
+    	  <Arguments>-NonInteractive -Command "&amp; '.\Install-Updates.ps1' -EnableAutomaticUpdates -AllowReboot $OptionalUpdatesSwitch -Force"</Arguments>
 		  <WorkingDirectory>$ScriptDir</WorkingDirectory>
         </Exec>
     </Actions>
