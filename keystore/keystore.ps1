@@ -1,9 +1,9 @@
-﻿# PKCS based password management 
+# PKCS based password management
 # Password are stored by hostname and service (the latter is optional).
-# A password store is a directory consisting of encrypted files and a thumbprint 
+# A password store is a directory consisting of encrypted files and a thumbprint
 # file identifying the certificate used to encrypt/decrypt the credentials
 #
-# Usage: dot-source this file 
+# Usage: dot-source this file
 #
 # MakeCert.exe is required to make self-signed certificates.
 #
@@ -51,14 +51,14 @@
 # Set-Key "http://foo" -userProfile -username "user" -password "pass"
 #
 # Retrieve the key using:
-# 
+#
 # Get-Key "http://foo" -userProfile
 #
 # Use 'get-help get-key' and 'get-help set-key' for more options.
 [System.Reflection.Assembly]::LoadWithPartialName("System.Security") | out-null
 
 function getAvailableCerts() {
-	ls -Recurse cert:
+	ls -Recurse cert:\
 }
 
 function getUserLocalStore() {
@@ -79,10 +79,10 @@ filter SHA {
 	$str.ToString()
 }
 
-function PKCSEncrypt( 
-	[parameter(mandatory=$true)] 
-	[string] $stringToEncrypt, 
-	[parameter(mandatory=$true)] 
+function PKCSEncrypt(
+	[parameter(mandatory=$true)]
+	[string] $stringToEncrypt,
+	[parameter(mandatory=$true)]
 	[System.Security.Cryptography.X509Certificates.X509Certificate2] $cert)
 {
 	$passbytes = [Text.Encoding]::UTF8.GetBytes($stringToEncrypt)
@@ -93,10 +93,10 @@ function PKCSEncrypt(
 	[Convert]::Tobase64String($env.Encode())
 }
 
-function PKCSDecrypt( 
-	[parameter(mandatory=$true)] 
-	[string] $EncryptedString, 
-	[parameter(mandatory=$true)] 
+function PKCSDecrypt(
+	[parameter(mandatory=$true)]
+	[string] $EncryptedString,
+	[parameter(mandatory=$true)]
 	[System.Security.Cryptography.X509Certificates.X509Certificate2] $cert)
 {
 	$encodedBytes = [Convert]::Frombase64String($EncryptedString)
@@ -117,9 +117,9 @@ function selectCertificate() {
 	if( $null -ne $startInfo -and $startInfo.Arguments -imatch "-noninteractive" ) {
 		throw "Cannot select certificate interactively when PowerShell is executed with -NonInteractive"
 	}
-	$collection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection 
-	getAvailableCerts | ?{ $_.HasPrivateKey } | %{ $collection.Add($_) } | Out-Null 
-	$cert = [System.Security.Cryptography.x509Certificates.X509Certificate2UI]::SelectFromCollection( $collection, "Choose encryption key", "Select a certificate to encrypt your data with or click cancel to make a self signed certificate", 0) 
+	$collection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
+	getAvailableCerts | ?{ $_.HasPrivateKey } | %{ $collection.Add($_) } | Out-Null
+	$cert = [System.Security.Cryptography.x509Certificates.X509Certificate2UI]::SelectFromCollection( $collection, "Choose encryption key", "Select a certificate to encrypt your data with or click cancel to make a self signed certificate", 0)
 	if(!$cert) {
 		Write-Host "No certificate selected. Creating a self-signed certificate.."
 		$cert = newCert
@@ -130,7 +130,7 @@ function selectCertificate() {
 function setCredential {
 	param(
 		[parameter(mandatory=$true,position=0)]
-		[string] $keyName, 
+		[string] $keyName,
 		[parameter(mandatory=$true,position=1,parametersetname="UsernamePassword")]
 		[string] $username,
 		[parameter(mandatory=$true,position=2,parametersetname="UsernamePassword")]
@@ -178,9 +178,9 @@ function setCredential {
 }
 
 function removeCredential {
-	param( 
+	param(
 		[parameter(mandatory=$true)]
-		[string] $keyName, 
+		[string] $keyName,
 		$store = (gi .),
 		[switch] $userProfile
 	)
@@ -200,9 +200,9 @@ function keyFilePath( $store, $keyName ) {
 }
 
 function getCredential {
-	param( 
+	param(
 		[parameter(mandatory=$true)]
-		[string] $keyName, 
+		[string] $keyName,
 		$store = (gi .),
 		[switch] $userProfile
 	)
@@ -223,7 +223,7 @@ function getCredential {
 			new-object System.Management.Automation.PSCredential( $Username, (ConvertTo-SecureString -AsPlainText -Force -String $Password) )
 		}
 	}
-}	
+}
 
 function newCert($commonName = (Read-Host -Prompt "Enter common name for certificate to be created")) {
 	$subject = "CN=$commonName"
@@ -254,7 +254,7 @@ function randomPassword( $length = 25 ) {
 }
 
 function exportCertificate {
-	param( 
+	param(
 		[parameter(mandatory=$true, valuefrompipelinebypropertyname=$true,parametersetname="Thumbprint")]
 		[string] $thumbprint,
 		[parameter(mandatory=$true, valuefrompipeline=$true, parametersetname="Certificate")]
@@ -275,7 +275,7 @@ function exportCertificate {
 }
 
 function getNetworkCredential {
-	param( 
+	param(
 		[parameter(mandatory=$true, valuefrompipeline=$true)]
 		[System.Management.Automation.PSCredential] $credential
 	)
@@ -287,7 +287,7 @@ function getNetworkCredential {
 }
 
 function getCurlCredential {
-	param( 
+	param(
 		[parameter(mandatory=$true, valuefrompipeline=$true)]
 		[System.Management.Automation.PSCredential] $credential
 	)
@@ -300,8 +300,8 @@ function getCurlCredential {
 }
 
 set-alias Get-Key getCredential
-set-alias Set-Key setCredential 
-set-alias Remove-Key removeCredential 
+set-alias Set-Key setCredential
+set-alias Remove-Key removeCredential
 set-alias New-Certificate newCert
 set-alias Select-Certificate selectCertificate
 set-alias Export-Certificate exportCertificate
