@@ -90,8 +90,8 @@ process {
         $link = $csproj.CreateElement("Link", $xmlns)
         $link.AppendChild($csproj.CreateTextNode($projectCommonAssemblyInfoFilePath)) | Out-Null
         $ref.AppendChild($link) | Out-Null
-    
-        $assemblyInfoFile.ParentNode.InsertAfter($ref, $assemblyInfoFile) | Out-Null
+
+        $assemblyInfoFile.ParentNode.InsertBefore($ref, $assemblyInfoFile) | Out-Null
 
         Write-Verbose "Saving $ProjectFilePath..."
 
@@ -108,7 +108,7 @@ process {
                 $attributes += $_
             }
         }
-    
+
         $usingsString = $usings -join [System.Environment]::NewLine
         $attributesString = $attributes -join [System.Environment]::NewLine
         $content = $usingsString + [System.Environment]::NewLine + [System.Environment]::NewLine + $attributesString
