@@ -56,9 +56,9 @@ process {
 
     $files = $csproj.Project.SelectNodes( "//*[local-name() = 'Compile']", $namespaceManager )
 
-    $assemblyInfoFile = $files | Where-Object { $_.Include -imatch '\\AssemblyInfo.cs$' } | Select-Object -First 1
+    $assemblyInfoFile = $files | Where-Object { $_.Include -imatch '(^|\\)AssemblyInfo.cs$' } | Select-Object -First 1
     if( -not $assemblyInfoFile ) {
-        Write-Verbose "$ProjectFilePath does not contain a AssemblyInfo.cs"
+        Write-Error "$ProjectFilePath does not contain an AssemblyInfo.cs"
         return;
     }
 
