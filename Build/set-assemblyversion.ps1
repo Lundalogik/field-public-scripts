@@ -28,8 +28,8 @@ if( $InputObject -ne $null ) {
 
 Write-Host "Updating version to $major.$minor.$build.$revision"
 
-$lines = (gc $assemblyInfoFile) -replace "(?<=Assembly(File)?Version(Attribute)?\s*\(\s*`")(\d+\.\d+\.\d+\.\d+)(?=`"\s*\))", "$major.$minor.$build.$revision"
-$lines | sc $assemblyInfoFile
+$lines = (Get-Content $assemblyInfoFile) -replace "(?<=Assembly(File)?Version(Attribute)?\s*\(\s*`")(\d+\.\d+\.\d+\.\d+)(?=`"\s*\))", "$major.$minor.$build.$revision"
+$lines | Set-Content $assemblyInfoFile
 $newVersion = iex "$($MyInvocation.MyCommand.Path | Split-Path)\get-assemblyversion.ps1 -assemblyInfoFile $assemblyInfoFile"
 
 if( $newVersion.Major -ne $major -or $newVersion.Minor -ne $minor -or $newVersion.Build -ne $build -or $newVersion.Revision -ne $revision ) {

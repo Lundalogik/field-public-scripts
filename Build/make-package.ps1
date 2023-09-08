@@ -165,7 +165,7 @@ filter AsPackageSpec {
 	$spec = HashSpec $specFile
 	$lastKey = ""
 	$lineNumber = 0
-	gc $specFile.FullName | %{
+	Get-Content $specFile.FullName | %{
 		$lineNumber++
 		if( $_ -match "^([^\s#]+)(\s+(.+))?$" ) {
 			if( $matches[1] -eq "from" -and (IsValidSpecHash $spec ) ) {

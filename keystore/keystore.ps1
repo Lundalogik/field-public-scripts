@@ -165,7 +165,7 @@ function setCredential {
     $store = getUserLocalStore
   }
 
-  sc -Encoding Ascii -Path (keyFilePath $store $keyName) -Value @( $cert.Thumbprint, (PKCSEncrypt "${username}:${password}" $cert) )
+  Set-Content -Encoding Ascii -Path (keyFilePath $store $keyName) -Value @( $cert.Thumbprint, (PKCSEncrypt "${username}:${password}" $cert) )
   $cred = getCredential -keyName $keyName -store $store
   if( $cred ) {
     $networkcredential = $cred | getNetworkCredential
@@ -214,7 +214,7 @@ function getCredential {
 
   $keyFile = keyFilePath $store $keyName
   if( Test-Path -PathType Leaf $keyFile ) {
-    $keyData = gc -Encoding Ascii -Path $keyFile
+    $keyData = Get-Content -Encoding Ascii -Path $keyFile
     $cert = getAvailableCerts | ?{ $_.Thumbprint -eq $keyData[0] } | select -first 1
     if(!$cert) {
       throw ("Cannot find the requested certificate: {0}" -f $keyData[0])
@@ -271,7 +271,7 @@ function exportCertificate {
     throw "No cert found or no cert specified"
   }
   $certBytes = $certificate.Export( [System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $Password )
-  sc -Path $Path -Value $certBytes -Encoding byte
+  Set-Content -Path $Path -Value $certBytes -Encoding byte
   gi $Path
 }
 

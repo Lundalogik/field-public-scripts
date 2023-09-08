@@ -11,7 +11,7 @@ param(
 
 $version = "" | select Major, Minor, Build, Revision | Add-Member -PassThru -Name Version -MemberType ScriptProperty -Value { "$($this.Major).$($this.Minor).$($this.Build).$($this.Revision)" }
 
-gc $assemblyInfoFile | %{ 
+Get-Content $assemblyInfoFile | %{ 
 	if( $_ -match "AssemblyVersion(Attribute)?\s*\(\s*`"(\d+)\.(\d+)\.(\d+)\.(\d+)`"\s*\)" ) {
 		$version.Major = [int]$matches[2]
 		$version.Minor = [int]$matches[3]

@@ -11,7 +11,7 @@ $manifestXml = ""
 if( $manifestPathOrUrl -imatch "^https?:" ) {
 	$manifestXml = [xml](curl -sk $manifestPathOrUrl)
 } else {
-	$manifestXml = [xml](gc $manifestPathOrUrl)
+	$manifestXml = [xml](Get-Content $manifestPathOrUrl)
 }
 
 function Get-SizeFormatted ($bytes,$precision='0') {

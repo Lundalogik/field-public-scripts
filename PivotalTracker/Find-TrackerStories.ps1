@@ -23,6 +23,6 @@ if( $filter ) {
 }
 $tmpFile = [System.IO.Path]::GetTempFileName()
 curl -s -o $tmpFile -X GET -H "Accept: application/json; charset=iso-8859-1" -H "X-TrackerToken: $trackerToken" "https://www.pivotaltracker.com/services/v5/projects/$projectId/stories?$query"
-$story = gc -Encoding UTF8 $tmpFile | Out-String
+$story = Get-Content -Encoding UTF8 $tmpFile | Out-String
 rm $tmpFile
 $story | ConvertFrom-Json

@@ -8,7 +8,7 @@
 
 	if( test-path $sqlScript -erroraction SilentlyContinue ) {
 		$sqlScriptFile = $sqlScript
-		$lines = gc $sqlScript
+		$lines = Get-Content $sqlScript
 	} else {
 		$sqlScriptFile = "unknown"
 		$lines = $sqlScript.Split( "`r`n" )
